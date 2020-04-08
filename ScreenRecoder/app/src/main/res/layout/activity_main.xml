@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <EditText
+        android:id="@+id/et_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter Name"/>
+
+    <Button android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Submit"
+        android:id="@+id/btn_submit" />
+
+    <TextView android:id="@+id/tv_message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:gravity="center"
+        android:layout_marginTop="12dp" />
+
+    <Button android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Record Start"
+        android:id="@+id/btn_start"/>
+
+    <Button android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Record Stop"
+        android:id="@+id/btn_stop" />
+</LinearLayout>
