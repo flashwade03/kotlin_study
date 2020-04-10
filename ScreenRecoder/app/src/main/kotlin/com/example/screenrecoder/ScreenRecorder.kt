@@ -1,42 +1,43 @@
 package com.example.screenrecoder
 
-import android.Manifest
 import android.app.Activity
-import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.content.res.Resources
-import android.hardware.display.DisplayManager
-import android.media.MediaRecorder
-import android.media.projection.MediaProjection
-import android.media.projection.MediaProjectionManager
-import android.net.Uri
 import android.os.Build
-import kotlinx.android.synthetic.main.activity_main.*
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.os.Debug
-import android.os.Environment
+import android.os.Handler
 import android.util.Log
+import android.widget.SeekBar
 import androidx.annotation.RequiresApi
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import java.io.IOException
+import androidx.appcompat.app.AppCompatActivity
+import kotlinx.android.synthetic.main.activity_main.*
 
 class ScreenRecorder : AppCompatActivity() {
-
-    private var mediaProjectionManager: MediaProjectionManager? = null
-    private var mediaProjection: MediaProjection? = null
-    private var mediaRecorder: MediaRecorder? = null
+    private var recorder: Recorder? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        tv_popupmessage.text = "Welcome to screen recorder"
+        sb.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener{
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                tv_settingTime.text = String.format("Setting Time : %d (s)", seekBar!!.progress)
+            }
 
-        check_permission()
-        btn_submit.setOnClickListener{
-            tv_message.text = "Hello, " + et_name.text.toString()
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                Log.d("test", "start time setting")
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                Log.d("test", "end time setting")
+            }
+        })
+
+        recorder = Recorder()
+        if (recorder?.check_permission(this)!!) {
+            recorder?.init()
+            initializeRecordButtons()
+            tv_popupmessage.text = "Recorder is ready!!!"
         }
     }
 
@@ -46,34 +47,12 @@ class ScreenRecorder : AppCompatActivity() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        if (requestCode == REQUEST_CODE_MEDIAPROJECTION && resultCode == Activity.RESULT_OK) {
-            screenRecorder(resultCode, data)
+        if (requestCode == Recorder.REQUEST_CODE_MEDIAPROJECTION && resultCode == Activity.RESULT_OK) {
+            recorder?.startRecording(resultCode, data)
             return
         }
 
         super.onActivityResult(requestCode, resultCode, data)
-    }
-    fun check_permission() {
-        Log.d("test", "start check_permission")
-        var permissions: MutableList<String> = arrayListOf()
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            permissions.add(Manifest.permission.RECORD_AUDIO)
-        }
-
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-        }
-
-        for (permission in permissions.toTypedArray()) {
-            Log.d("test", permission)
-        }
-
-        if (permissions.isNotEmpty()) {
-            ActivityCompat.requestPermissions(this, permissions.toTypedArray(), REQUEST_CODE_PERMISSIONS)
-        }
-        else {
-            initializeRecordButtons()
-        }
     }
 
     override fun onRequestPermissionsResult(
@@ -82,9 +61,10 @@ class ScreenRecorder : AppCompatActivity() {
         grantResults: IntArray
     ) {
         when(requestCode) {
-            REQUEST_CODE_PERMISSIONS -> {
+            Recorder.REQUEST_CODE_PERMISSIONS -> {
                 if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
                     Log.d("test", "Permissions granted")
+                    recorder?.init()
                     initializeRecordButtons()
                 }else{
                     Log.d("test", "Permissions not granted")
@@ -98,85 +78,25 @@ class ScreenRecorder : AppCompatActivity() {
     private fun initializeRecordButtons() {
         Log.d("test","Permission Ready!!!")
         btn_start.setOnClickListener{
-            startMediaProjection()
-        }
+            tv_popupmessage.text = "Start Recording"
+            recorder?.makeRecordingModules(this)
+            if (sb.progress != 0) {
+                Log.d("test", sb.progress.toString())
+                Handler().postDelayed({
+                    recorder?.stopRecording()
+                    tv_popupmessage.text = "Finished Recording"
+                }, (sb.progress*1000).toLong())
 
-
-    }
-
-    private fun startMediaProjection() {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-            mediaProjectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-            startActivityForResult(mediaProjectionManager!!.createScreenCaptureIntent(), REQUEST_CODE_MEDIAPROJECTION)
-        }
-    }
-
-    private fun screenRecorder(resultCode: Int, data: Intent?) {
-        mediaProjection = mediaProjectionManager?.getMediaProjection(resultCode, data!!)
-        mediaRecorder = createRecorder()
-        if (mediaRecorder == null) {
-            Log.d("test", "recorder is null")
-        }else{
-            Log.d("test", "recorder is initialized")
-        }
-
-        val callback = object: MediaProjection.Callback() {
-            override fun onStop() {
-                super.onStop()
-                mediaRecorder?.stop()
-                mediaRecorder?.reset()
-                mediaRecorder?.release()
-                mediaRecorder = null
-
-                mediaProjection?.unregisterCallback(this)
-                mediaProjection = null
             }
         }
 
-        mediaProjection?.registerCallback(callback, null)
-        val displayMetrics = Resources.getSystem().displayMetrics
-        mediaProjection?.createVirtualDisplay(
-            "sample",
-            displayMetrics.widthPixels, displayMetrics.heightPixels, displayMetrics.densityDpi, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-            mediaRecorder?.surface, null, null)
-
         btn_stop.setOnClickListener{
-            mediaProjection?.stop()
-
-            val intent = Intent(Intent.ACTION_VIEW)
-            intent.setDataAndType(Uri.parse(videoFile), "video/mp4")
-            startActivity(intent)
+            recorder?.stopRecording()
+            tv_popupmessage.text = "Finished Recording"
         }
 
-        mediaRecorder?.start()
-    }
-
-    private fun createRecorder(): MediaRecorder {
-        val recorder = MediaRecorder()
-        recorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT)
-        recorder.setVideoSource(MediaRecorder.VideoSource.SURFACE)
-        recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-        recorder.setOutputFile(videoFile)
-        Log.d("test", videoFile)
-        val displayMetrics = Resources.getSystem().displayMetrics
-        recorder.setVideoSize(displayMetrics.widthPixels, displayMetrics.heightPixels)
-        recorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264)
-        recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-        recorder.setVideoEncodingBitRate(512*1000)
-        recorder.setVideoFrameRate(30)
-        try{
-            recorder!!.prepare()
-            Log.d("test", "recorder is ready")
-        } catch (e: IOException) {
-            Log.d("test", "recorder has error")
-            e.printStackTrace()
+        btn_play.setOnClickListener{
+            recorder?.play(this)
         }
-        return recorder
-    }
-
-    companion object {
-        private val videoFile:String = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).toString() + "/MediaProjection.mp4"
-        private val REQUEST_CODE_PERMISSIONS = 100
-        private val REQUEST_CODE_MEDIAPROJECTION = 101
     }
 }

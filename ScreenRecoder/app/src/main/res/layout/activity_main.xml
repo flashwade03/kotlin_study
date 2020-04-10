@@ -5,31 +5,43 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <EditText
-        android:id="@+id/et_name"
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Enter Name"/>
+        android:text="Setting Time : (s)"
+        android:id="@+id/tv_settingTime"/>
 
-    <Button android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Submit"
-        android:id="@+id/btn_submit" />
-
-    <TextView android:id="@+id/tv_message"
+    <SeekBar
+        android:id="@+id/sb"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:gravity="center"
-        android:layout_marginTop="12dp" />
+        android:max="100"
+        android:progress="10"/>
 
-    <Button android:layout_width="match_parent"
+    <Button
+        android:id="@+id/btn_start"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Record Start"
-        android:id="@+id/btn_start"/>
+        android:text="Record Start" />
 
     <Button android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Record Stop"
         android:id="@+id/btn_stop" />
+
+    <Button
+        android:id="@+id/btn_play"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Play" />
+
+    <TextView
+        android:id="@+id/tv_popupmessage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:gravity="center"
+        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+
 </LinearLayout>
