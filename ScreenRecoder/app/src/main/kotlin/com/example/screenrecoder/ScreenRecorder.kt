@@ -13,7 +13,6 @@ import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
 
 class ScreenRecorder : AppCompatActivity() {
-    private var recorder: Recorder? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,17 +24,16 @@ class ScreenRecorder : AppCompatActivity() {
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {
-                Log.d("test", "start time setting")
+                Log.d("ScreenRecorder", "start time setting")
             }
 
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                Log.d("test", "end time setting")
+                Log.d("ScreenRecorder", "end time setting")
             }
         })
 
-        recorder = Recorder()
-        if (recorder?.check_permission(this)!!) {
-            recorder?.init()
+        if (Recorder.check_permission(this)!!) {
+            Recorder.init()
             initializeRecordButtons()
             tv_popupmessage.text = "Recorder is ready!!!"
         }
@@ -48,7 +46,7 @@ class ScreenRecorder : AppCompatActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (requestCode == Recorder.REQUEST_CODE_MEDIAPROJECTION && resultCode == Activity.RESULT_OK) {
-            recorder?.startRecording(resultCode, data)
+            Recorder.onFinshedMPMCreate(resultCode, data!!)
             return
         }
 
@@ -63,11 +61,11 @@ class ScreenRecorder : AppCompatActivity() {
         when(requestCode) {
             Recorder.REQUEST_CODE_PERMISSIONS -> {
                 if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
-                    Log.d("test", "Permissions granted")
-                    recorder?.init()
+                    Log.d("ScreenRecorder", "Permissions granted")
+                    Recorder.init()
                     initializeRecordButtons()
                 }else{
-                    Log.d("test", "Permissions not granted")
+                    Log.d("ScreenRecorder", "Permissions not granted")
                 }
                 return
             }
@@ -76,14 +74,14 @@ class ScreenRecorder : AppCompatActivity() {
     }
 
     private fun initializeRecordButtons() {
-        Log.d("test","Permission Ready!!!")
+        Log.d("ScreenRecorder","Permission Ready!!!")
         btn_start.setOnClickListener{
             tv_popupmessage.text = "Start Recording"
-            recorder?.makeRecordingModules(this)
+            Recorder.startRecording()
             if (sb.progress != 0) {
                 Log.d("test", sb.progress.toString())
                 Handler().postDelayed({
-                    recorder?.stopRecording()
+                    Recorder.stopRecording()
                     tv_popupmessage.text = "Finished Recording"
                 }, (sb.progress*1000).toLong())
 
@@ -91,12 +89,12 @@ class ScreenRecorder : AppCompatActivity() {
         }
 
         btn_stop.setOnClickListener{
-            recorder?.stopRecording()
+            Recorder.stopRecording()
             tv_popupmessage.text = "Finished Recording"
         }
 
         btn_play.setOnClickListener{
-            recorder?.play(this)
+            Recorder.play()
         }
     }
 }
